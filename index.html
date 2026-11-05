@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Gewinnverteilung – Dashboard</title>
+<!-- iOS Add-to-Home-Screen support -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Gewinnrechner" />
+<meta name="theme-color" content="#4f46e5" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%234f46e5'/><text x='16' y='23' text-anchor='middle' font-family='-apple-system,Helvetica' font-weight='700' font-size='20' fill='white'>%E2%82%AC</text></svg>" />
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg-from: #eef2ff;
+    --bg-via: #f5f3ff;
+    --bg-to: #ecfeff;
+    --panel: #ffffff;
+    --panel-soft: #f8fafc;
+    --border: #e2e8f0;
+    --border-strong: #cbd5e1;
+    --text: #0f172a;
+    --muted: #64748b;
+    --accent: #4f46e5;
+    --accent-soft: #eef2ff;
+    --pos: #15803d;
+    --pos-soft: #dcfce7;
+    --neg: #b91c1c;
+    --neg-soft: #fee2e2;
+    --neutral: #6b7280;
+  }
+  html, body {
+    background:
+      radial-gradient(1200px 600px at 0% 0%, #e0e7ff 0%, transparent 60%),
+      radial-gradient(1000px 500px at 100% 0%, #cffafe 0%, transparent 55%),
+      radial-gradient(1000px 600px at 50% 100%, #fae8ff 0%, transparent 60%),
+      linear-gradient(180deg, var(--bg-from) 0%, var(--bg-via) 50%, var(--bg-to) 100%);
+    background-attachment: fixed;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+  }
+  .num {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum";
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.04),
+      0 8px 24px -12px rgba(15, 23, 42, 0.08);
+  }
+  .field-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  input[type="text"], select {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.95rem;
+    color: var(--text);
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  }
+  input[type="text"]:hover, select:hover {
+    border-color: var(--border-strong);
+  }
+  input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    background: #ffffff;
+  }
+  /* Tinted, slightly raised capital field */
+  input.capital-field {
+    background: #eef2ff;
+    border-color: #c7d2fe;
+    font-weight: 600;
+    color: #1e1b4b;
+  }
+  input.capital-field:hover {
+    background: #e0e7ff;
+    border-color: #a5b4fc;
+  }
+  input.capital-field:focus {
+    background: #ffffff;
+  }
+  table.dist th, table.dist td {
+    padding: 0.6rem 0.7rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+  }
+  table.dist tbody tr:last-child td {
+    border-bottom: none;
+  }
+  table.dist th {
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    background: var(--panel-soft);
+  }
+  table.dist td input {
+    width: 7rem;
+    text-align: right;
+    padding: 0.4rem 0.55rem;
+  }
+  /* Right-align breakdown table headers when class="text-right" is present */
+  table.dist th.text-right {
+    text-align: right;
+  }
+  /* Distribution cards */
+  .dist-cell {
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 0.85rem;
+  }
+  .dist-party {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 0.6rem;
+  }
+  .dist-sublabel {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+  }
+  .dist-input {
+    width: 100%;
+    padding: 0.4rem 0.55rem;
+  }
+  .dist-total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(90deg, #f8fafc 0%, #eef2ff 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.6rem 0.85rem;
+    margin-top: 0.65rem;
+  }
+  .dist-total-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .dist-total-value {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .pos { color: var(--pos); }
+  .neg { color: var(--neg); }
+  .neutral { color: var(--neutral); }
+  .disabled-panel {
+    opacity: 0.4;
+    pointer-events: none;
+    filter: grayscale(0.7);
+    transition: opacity 0.2s;
+  }
+  .banner-error {
+    background: var(--neg-soft);
+    border: 1px solid #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+  }
+  .totals-row {
+    background: linear-gradient(90deg, #f8fafc 0%, #eef2ff 100%);
+    font-weight: 600;
+  }
+
+  /* Metric cards — colored, modern */
+  .metric-card {
+    border-radius: 14px;
+    padding: 1.1rem 1.2rem;
+    color: #ffffff;
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.06),
+      0 12px 30px -12px rgba(15, 23, 42, 0.25);
+    position: relative;
+    overflow: hidden;
+  }
+  .metric-card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(400px 200px at 100% 0%, rgba(255,255,255,0.18), transparent 60%);
+    pointer-events: none;
+  }
+  .metric-card.monthly {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  }
+  .metric-card.yearly {
+    background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  }
+  .metric-card.weekly {
+    background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  }
+  .metric-card.payback {
+    background: linear-gradient(135deg, #059669 0%, #0d9488 100%);
+  }
+  .recovery-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    margin-bottom: 0.25rem;
+    position: relative;
+    z-index: 1;
+  }
+  .recovery-cell {
+    text-align: center;
+    padding: 0.25rem 0.4rem;
+  }
+  .recovery-cell + .recovery-cell {
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
+  }
+  .recovery-cell-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.78);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.5rem;
+  }
+  .recovery-cell-value {
+    font-size: clamp(1.6rem, 4cqw + 0.6rem, 2.4rem);
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .payback-caption {
+    margin-top: 0.85rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.4;
+  }
+  .metric-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .metric-value {
+    font-size: clamp(1.05rem, 2.6cqw + 0.7rem, 1.7rem);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    position: relative;
+    z-index: 1;
+    color: #ffffff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .metric-card {
+    container-type: inline-size;
+  }
+  .metric-value.neg {
+    color: #ffe4e6;
+  }
+  .metric-value.neutral {
+    color: rgba(255,255,255,0.85);
+  }
+
+  /* Breakdown table: tabular nums, no wrap so amounts stay readable */
+  table.dist.breakdown td.num,
+  table.dist.breakdown th {
+    white-space: nowrap;
+  }
+  table.dist.breakdown {
+    table-layout: auto;
+  }
+
+  .sanity {
+    font-size: 0.83rem;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+    margin-top: 1rem;
+  }
+  .ok-tick { color: var(--pos); font-weight: 700; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin-bottom: 1rem;
+  }
+  .section-header h2 {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-soft);
+  }
+  .section-dot.violet { background: #7c3aed; box-shadow: 0 0 0 4px #ede9fe; }
+
+  .brand-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.6);
+    border: 1px solid rgba(255,255,255,0.8);
+    box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .brand-dot {
+    width: 8px; height: 8px; border-radius: 999px;
+    background: linear-gradient(135deg, #4f46e5, #06b6d4);
+  }
+
+  table.dist.breakdown tbody tr:not(.totals-row):hover {
+    background: var(--accent-soft);
+  }
+
+  /* Footer with prominent reset button */
+  .footer-bar {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .footer-text {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin: 0;
+    flex: 1 1 auto;
+  }
+  .btn-reset {
+    background: #dc2626;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.65rem 1.3rem;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    box-shadow:
+      0 1px 2px rgba(220, 38, 38, 0.25),
+      0 8px 20px -6px rgba(220, 38, 38, 0.4);
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .btn-reset:hover {
+    background: #b91c1c;
+    box-shadow:
+      0 1px 2px rgba(220, 38, 38, 0.3),
+      0 10px 24px -6px rgba(220, 38, 38, 0.5);
+    transform: translateY(-1px);
+  }
+  .btn-reset:active {
+    background: #991b1b;
+    transform: translateY(0);
+    box-shadow:
+      0 1px 2px rgba(220, 38, 38, 0.25),
+      0 4px 10px -4px rgba(220, 38, 38, 0.4);
+  }
+  .btn-reset:focus-visible {
+    outline: 3px solid rgba(220, 38, 38, 0.35);
+    outline-offset: 2px;
+  }
+
+  .footer-actions {
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .btn-share {
+    background: #4f46e5;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.65rem 1.3rem;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    box-shadow:
+      0 1px 2px rgba(79, 70, 229, 0.25),
+      0 8px 20px -6px rgba(79, 70, 229, 0.4);
+    transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+  .btn-share:hover {
+    background: #4338ca;
+    box-shadow:
+      0 1px 2px rgba(79, 70, 229, 0.3),
+      0 10px 24px -6px rgba(79, 70, 229, 0.5);
+    transform: translateY(-1px);
+  }
+  .btn-share:active {
+    background: #3730a3;
+    transform: translateY(0);
+  }
+  .btn-share:focus-visible {
+    outline: 3px solid rgba(79, 70, 229, 0.35);
+    outline-offset: 2px;
+  }
+  .btn-share.copied {
+    background: #15803d;
+    box-shadow:
+      0 1px 2px rgba(21, 128, 61, 0.25),
+      0 8px 20px -6px rgba(21, 128, 61, 0.4);
+  }
+</style>
+</head>
+<body class="min-h-screen">
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+  <header class="mb-8">
+    <div class="brand-bar mb-3">
+      <span class="brand-dot"></span>
+      <span>Investoren-Dashboard</span>
+    </div>
+    <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Gewinnverteilung</h1>
+    <p class="text-sm text-slate-500 mt-1">Lineare Monatsrenditen · Live-Berechnung</p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- INPUT COLUMN -->
+    <section class="panel p-6 lg:col-span-2">
+      <div class="section-header">
+        <span class="section-dot"></span>
+        <h2>Eingaben</h2>
+      </div>
+
+      <div class="flex items-end gap-3 mb-5 flex-wrap">
+        <div style="flex: 1 1 14rem; min-width: 13rem;">
+          <label class="field-label block mb-1.5">Anfangskapital</label>
+          <input type="text" id="capital" class="num text-right capital-field" value="1,000,000" />
+        </div>
+        <div style="flex: 0 0 6.5rem;">
+          <label class="field-label block mb-1.5">Währung</label>
+          <select id="currency">
+            <option value="EUR">EUR €</option>
+            <option value="USD" selected>USD $</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <label class="field-label block mb-1.5">Ø Gewinn % / Monat</label>
+        <input type="text" id="monthly" class="num text-right" style="max-width: 14rem;" value="10.00" />
+      </div>
+
+      <div>
+        <label class="field-label block mb-2">Gewinnverteilung</label>
+        <div class="grid grid-cols-3 gap-3">
+          <div class="dist-cell">
+            <div class="dist-party">Investor</div>
+            <div class="dist-sublabel">Anteil %</div>
+            <input type="text" id="shareInvestor" class="num text-right dist-input" value="60" />
+          </div>
+          <div class="dist-cell">
+            <div class="dist-party">Partner 1</div>
+            <div class="dist-sublabel">Anteil %</div>
+            <input type="text" id="shareParty1" class="num text-right dist-input" value="20" />
+          </div>
+          <div class="dist-cell">
+            <div class="dist-party">Partner 2</div>
+            <div class="dist-sublabel">Anteil %</div>
+            <input type="text" id="shareParty2" class="num text-right dist-input" value="20" />
+          </div>
+        </div>
+        <div class="dist-total-row">
+          <span class="dist-total-label">Gesamt</span>
+          <span class="num dist-total-value" id="shareTotal">100%</span>
+        </div>
+        <div id="distBanner" class="banner-error mt-3 px-3 py-2 text-sm hidden"></div>
+      </div>
+    </section>
+
+    <!-- OUTPUT COLUMN -->
+    <section id="outputPanel" class="lg:col-span-3">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+        <div class="metric-card weekly">
+          <div class="metric-label">Absoluter Wochengewinn</div>
+          <div class="metric-value num" id="absWeekly">—</div>
+        </div>
+        <div class="metric-card monthly">
+          <div class="metric-label">Absoluter Monatsgewinn</div>
+          <div class="metric-value num" id="absMonthly">—</div>
+        </div>
+        <div class="metric-card yearly">
+          <div class="metric-label">Absoluter Jahresgewinn</div>
+          <div class="metric-value num" id="absYearly">—</div>
+        </div>
+      </div>
+
+      <!-- Investor capital recovery callout -->
+      <div class="metric-card payback mb-5">
+        <div class="metric-label">Geschätzte Amortisation Investorenkapital</div>
+        <div class="recovery-grid">
+          <div class="recovery-cell">
+            <div class="recovery-cell-label">Jahre</div>
+            <div class="recovery-cell-value num" id="paybackYears">—</div>
+          </div>
+          <div class="recovery-cell">
+            <div class="recovery-cell-label">Monate</div>
+            <div class="recovery-cell-value num" id="paybackMonths">—</div>
+          </div>
+          <div class="recovery-cell">
+            <div class="recovery-cell-label">Wochen</div>
+            <div class="recovery-cell-value num" id="paybackWeeks">—</div>
+          </div>
+        </div>
+        <div class="payback-caption num" id="paybackCaption">—</div>
+      </div>
+
+      <div class="panel p-6">
+        <div class="section-header">
+          <span class="section-dot violet"></span>
+          <h2>Aufschlüsselung pro Partner</h2>
+        </div>
+        <div class="rounded-xl overflow-hidden border border-slate-200">
+          <table class="dist breakdown w-full">
+            <thead>
+              <tr>
+                <th>Partner</th>
+                <th class="text-right">Anteil %</th>
+                <th class="text-right">Monatlich</th>
+                <th class="text-right">Jährlich</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Investor</td>
+                <td class="text-right num" id="bdInvestorPct">—</td>
+                <td class="text-right num" id="bdInvestorMo">—</td>
+                <td class="text-right num" id="bdInvestorYr">—</td>
+              </tr>
+              <tr>
+                <td>Partner 1</td>
+                <td class="text-right num" id="bdParty1Pct">—</td>
+                <td class="text-right num" id="bdParty1Mo">—</td>
+                <td class="text-right num" id="bdParty1Yr">—</td>
+              </tr>
+              <tr>
+                <td>Partner 2</td>
+                <td class="text-right num" id="bdParty2Pct">—</td>
+                <td class="text-right num" id="bdParty2Mo">—</td>
+                <td class="text-right num" id="bdParty2Yr">—</td>
+              </tr>
+              <tr class="totals-row">
+                <td>Gesamt</td>
+                <td class="text-right num" id="bdTotalPct">—</td>
+                <td class="text-right num" id="bdTotalMo">—</td>
+                <td class="text-right num" id="bdTotalYr">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="sanity num" id="sanity">—</div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer-bar">
+    <p class="footer-text">
+      Lineares Modell: jährlich % = monatlich % × 10 (10 produktive Monate pro Jahr). Gewinne werden nicht reinvestiert. Lokal auf diesem Gerät gespeichert.
+    </p>
+    <div class="footer-actions">
+      <button type="button" class="btn-share" id="shareBtn" onclick="window.__shareDashboard()">Link teilen</button>
+      <button type="button" class="btn-reset" onclick="window.__resetDashboard()">Auf Standardwerte zurücksetzen</button>
+    </div>
+  </footer>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  const state = {
+    capital: 1000000,
+    monthlyPct: 10.0,
+    yearlyPct: 100.0,
+    currency: "USD",
+    shares: { investor: 60, party1: 20, party2: 20 },
+    lastEdited: "monthly"
+  };
+
+  const CURRENCY_META = {
+    EUR: { symbol: "€", locale: "de-DE" },
+    USD: { symbol: "$", locale: "de-DE" }
+  };
+
+  // ---------- Local persistence ----------
+  const STORAGE_KEY = "profit-dashboard-v1";
+
+  function saveState() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        v: 1,
+        capital: state.capital,
+        monthlyPct: state.monthlyPct,
+        currency: state.currency,
+        shares: state.shares
+      }));
+    } catch (e) { /* storage unavailable; ignore */ }
+  }
+
+  function restoreState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const p = JSON.parse(raw);
+      if (!p || p.v !== 1) return false;
+      if (typeof p.capital === "number") state.capital = p.capital;
+      if (typeof p.monthlyPct === "number") state.monthlyPct = p.monthlyPct;
+      if (typeof p.currency === "string" && CURRENCY_META[p.currency]) state.currency = p.currency;
+      if (p.shares && typeof p.shares === "object") {
+        if (typeof p.shares.investor === "number") state.shares.investor = p.shares.investor;
+        if (typeof p.shares.party1 === "number") state.shares.party1 = p.shares.party1;
+        if (typeof p.shares.party2 === "number") state.shares.party2 = p.shares.party2;
+      }
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function clearState() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  }
+
+  // ---------- URL parameters (for shareable links) ----------
+  function readUrlParams() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      let applied = false;
+
+      const cap = params.get("cap");
+      if (cap !== null) {
+        const v = parseFloat(cap);
+        if (isFinite(v) && v >= 0) { state.capital = v; applied = true; }
+      }
+      const cur = params.get("cur");
+      if (cur !== null && CURRENCY_META[cur]) {
+        state.currency = cur; applied = true;
+      }
+      const m = params.get("m");
+      if (m !== null) {
+        const v = parseFloat(m);
+        if (isFinite(v)) { state.monthlyPct = v; applied = true; }
+      }
+      const i = params.get("i");
+      if (i !== null) {
+        const v = parseFloat(i);
+        if (isFinite(v) && v >= 0 && v <= 100) { state.shares.investor = v; applied = true; }
+      }
+      const p1 = params.get("p1");
+      if (p1 !== null) {
+        const v = parseFloat(p1);
+        if (isFinite(v) && v >= 0 && v <= 100) { state.shares.party1 = v; applied = true; }
+      }
+      const p2 = params.get("p2");
+      if (p2 !== null) {
+        const v = parseFloat(p2);
+        if (isFinite(v) && v >= 0 && v <= 100) { state.shares.party2 = v; applied = true; }
+      }
+      return applied;
+    } catch (e) { return false; }
+  }
+
+  function buildShareUrl() {
+    const base = window.location.origin + window.location.pathname;
+    const params = new URLSearchParams({
+      cap: String(state.capital),
+      cur: state.currency,
+      m: String(state.monthlyPct),
+      i: String(state.shares.investor),
+      p1: String(state.shares.party1),
+      p2: String(state.shares.party2)
+    });
+    return base + "?" + params.toString();
+  }
+
+  function parseNumberLoose(raw) {
+    if (raw === null || raw === undefined) return NaN;
+    let s = String(raw).trim();
+    if (s === "") return 0;
+    s = s.replace(/\s/g, "");
+    const hasDot = s.includes(".");
+    const hasComma = s.includes(",");
+    if (hasDot && hasComma) {
+      // Both present — last one wins as decimal mark
+      const lastDot = s.lastIndexOf(".");
+      const lastComma = s.lastIndexOf(",");
+      if (lastComma > lastDot) {
+        // European: 1.000.000,50
+        s = s.replace(/\./g, "").replace(",", ".");
+      } else {
+        // US/UK: 1,000,000.50
+        s = s.replace(/,/g, "");
+      }
+    } else if (hasComma) {
+      const commaCount = (s.match(/,/g) || []).length;
+      if (commaCount > 1) {
+        // Multiple commas → US thousand separator: 1,000,000
+        s = s.replace(/,/g, "");
+      } else {
+        const parts = s.split(",");
+        if (parts[1] && parts[1].length === 3 && parts[0].length <= 3) {
+          // X,NNN with no further info → most likely US thousand (1,000 or 100,000)
+          s = s.replace(/,/g, "");
+        } else {
+          // European decimal: 1,5
+          s = s.replace(",", ".");
+        }
+      }
+    } else if (hasDot) {
+      const dotCount = (s.match(/\./g) || []).length;
+      if (dotCount > 1) {
+        // Multiple dots → European thousand: 1.000.000
+        s = s.replace(/\./g, "");
+      } else {
+        // Single dot — could be European thousand (X.NNN) or US decimal
+        const parts = s.split(".");
+        if (parts[1] && parts[1].length === 3 && parts[0].length >= 1 && parts[0].length <= 3) {
+          // Pattern X.NNN with leading group ≤ 3 digits → treat as EU thousand
+          // Handles "1.000", "10.000", "100.000" as 1000, 10000, 100000
+          s = s.replace(/\./g, "");
+        }
+        // else keep as decimal: "1.5", "100.50" etc.
+      }
+    }
+    s = s.replace(/[^\d.\-]/g, "");
+    const n = parseFloat(s);
+    return isNaN(n) ? NaN : n;
+  }
+
+  function formatCurrency(value) {
+    const meta = CURRENCY_META[state.currency];
+    if (!isFinite(value)) value = 0;
+    const rounded = Math.round(value);
+    const formatter = new Intl.NumberFormat(meta.locale, {
+      minimumFractionDigits: 0, maximumFractionDigits: 0, useGrouping: true
+    });
+    const formatted = formatter.format(Math.abs(rounded));
+    const sign = rounded < 0 ? "-" : "";
+    return sign + meta.symbol + formatted;
+  }
+
+  function formatNumberPlain(value, decimals = 2) {
+    if (!isFinite(value)) value = 0;
+    return new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: decimals, maximumFractionDigits: decimals, useGrouping: true
+    }).format(value);
+  }
+
+  function formatPct(value, decimals = 0) {
+    if (!isFinite(value)) value = 0;
+    return formatNumberPlain(value, decimals) + "%";
+  }
+
+  function colorClass(value) {
+    if (Math.abs(value) < 1e-9) return "neutral";
+    return value > 0 ? "pos" : "neg";
+  }
+
+  function setColored(el, value, formatted) {
+    el.textContent = formatted;
+    el.classList.remove("pos", "neg", "neutral");
+    el.classList.add(colorClass(value));
+  }
+
+  // Linear link (10 productive months per year)
+  function monthlyToYearly(m) { return m * 10; }
+  function yearlyToMonthly(y) { return y / 10; }
+
+  function attachNumericGuard(input, opts = {}) {
+    const allowNegative = opts.allowNegative !== false;
+    input.dataset.lastValid = input.value;
+    input.addEventListener("input", function () {
+      const val = input.value;
+      if (val === "" || val === "-" || val === ".") {
+        input.dataset.lastValid = val;
+        return;
+      }
+      const stripped = val.replace(/[\d.,\-\s]/g, "");
+      if (stripped.length > 0) {
+        input.value = input.dataset.lastValid || "";
+        try { input.setSelectionRange(input.value.length, input.value.length); } catch (e) {}
+        return;
+      }
+      const parsed = parseNumberLoose(val);
+      if (isNaN(parsed)) { input.value = input.dataset.lastValid || ""; return; }
+      if (!allowNegative && parsed < 0) { input.value = input.dataset.lastValid || ""; return; }
+      input.dataset.lastValid = val;
+    });
+  }
+
+  const $capital = document.getElementById("capital");
+  const $currency = document.getElementById("currency");
+  const $monthly = document.getElementById("monthly");
+  const $shareInvestor = document.getElementById("shareInvestor");
+  const $shareParty1 = document.getElementById("shareParty1");
+  const $shareParty2 = document.getElementById("shareParty2");
+
+  attachNumericGuard($capital, { allowNegative: false });
+  attachNumericGuard($monthly, { allowNegative: true });
+  attachNumericGuard($shareInvestor, { allowNegative: false });
+  attachNumericGuard($shareParty1, { allowNegative: false });
+  attachNumericGuard($shareParty2, { allowNegative: false });
+
+  function readCapital() {
+    const v = parseNumberLoose($capital.value);
+    state.capital = isNaN(v) ? 0 : v;
+  }
+  function readShares() {
+    const i = parseNumberLoose($shareInvestor.value);
+    const p1 = parseNumberLoose($shareParty1.value);
+    const p2 = parseNumberLoose($shareParty2.value);
+    state.shares.investor = isNaN(i) ? 0 : i;
+    state.shares.party1 = isNaN(p1) ? 0 : p1;
+    state.shares.party2 = isNaN(p2) ? 0 : p2;
+  }
+
+  function render() {
+    const cap = state.capital;
+    const monthly = state.monthlyPct;
+    const yearly = state.yearlyPct;
+
+    const absMonthly = cap * (monthly / 100);
+    const absYearly = cap * (yearly / 100);
+    const absWeekly = absMonthly / 4;
+
+    setColored(document.getElementById("absWeekly"), absWeekly, formatCurrency(absWeekly));
+    setColored(document.getElementById("absMonthly"), absMonthly, formatCurrency(absMonthly));
+    setColored(document.getElementById("absYearly"), absYearly, formatCurrency(absYearly));
+
+    const s = state.shares;
+    const totalShare = s.investor + s.party1 + s.party2;
+    document.getElementById("shareTotal").textContent = formatPct(totalShare);
+
+    const sumOk = Math.abs(totalShare - 100) < 1e-9;
+    const banner = document.getElementById("distBanner");
+    const outputPanel = document.getElementById("outputPanel");
+    if (!sumOk) {
+      banner.textContent = `Die Verteilung muss 100% ergeben (derzeit ${formatPct(totalShare)})`;
+      banner.classList.remove("hidden");
+      outputPanel.classList.add("disabled-panel");
+    } else {
+      banner.classList.add("hidden");
+      outputPanel.classList.remove("disabled-panel");
+    }
+
+    const parties = [
+      { pct: s.investor, idPct: "bdInvestorPct", idMo: "bdInvestorMo", idYr: "bdInvestorYr" },
+      { pct: s.party1, idPct: "bdParty1Pct", idMo: "bdParty1Mo", idYr: "bdParty1Yr" },
+      { pct: s.party2, idPct: "bdParty2Pct", idMo: "bdParty2Mo", idYr: "bdParty2Yr" }
+    ];
+
+    let sumMo = 0, sumYr = 0;
+    parties.forEach(p => {
+      const moAmt = absMonthly * (p.pct / 100);
+      const yrAmt = absYearly * (p.pct / 100);
+      sumMo += moAmt; sumYr += yrAmt;
+      document.getElementById(p.idPct).textContent = formatPct(p.pct);
+      setColored(document.getElementById(p.idMo), moAmt, formatCurrency(moAmt));
+      setColored(document.getElementById(p.idYr), yrAmt, formatCurrency(yrAmt));
+    });
+
+    document.getElementById("bdTotalPct").textContent = formatPct(totalShare);
+    setColored(document.getElementById("bdTotalMo"), sumMo, formatCurrency(sumMo));
+    setColored(document.getElementById("bdTotalYr"), sumYr, formatCurrency(sumYr));
+
+    const moDelta = Math.abs(sumMo - absMonthly);
+    const yrDelta = Math.abs(sumYr - absYearly);
+    const totalsMatch = moDelta <= 1 && yrDelta <= 1;
+
+    // ---- Investor capital recovery ----
+    // months_to_payback = original capital / (monthly profit × investor share %)
+    const investorMonthly = absMonthly * (s.investor / 100);
+    const $years = document.getElementById("paybackYears");
+    const $months = document.getElementById("paybackMonths");
+    const $weeks = document.getElementById("paybackWeeks");
+    const $caption = document.getElementById("paybackCaption");
+
+    if (cap <= 0) {
+      $years.textContent = "0";
+      $months.textContent = "0";
+      $weeks.textContent = "0";
+      $caption.textContent = "Kein Kapital eingesetzt.";
+    } else if (investorMonthly <= 0) {
+      $years.textContent = "—";
+      $months.textContent = "—";
+      $weeks.textContent = "—";
+      if (Math.abs(investorMonthly) < 1e-9) {
+        $caption.textContent = "Kein Investorengewinn bei aktueller Rendite × Anteil.";
+      } else {
+        $caption.textContent = "Kapital verliert an Wert — keine Amortisation.";
+      }
+    } else {
+      const months = cap / investorMonthly;
+      const r = calcRecovery(months);
+      $years.textContent = r.years;
+      $months.textContent = r.months;
+      $weeks.textContent = r.weeks;
+      $caption.textContent =
+        `Bei einem Gewinnanteil von ${formatPct(s.investor)} wird das Investorenkapital in ca. ${formatRecoveryText(months)} zurückgewonnen.`;
+    }
+
+    // Totals tolerance footer (kept for distribution sanity)
+    const sanityEl = document.getElementById("sanity");
+    if (sumOk && !totalsMatch) {
+      sanityEl.innerHTML = `<span class="neg" style="font-weight:600">Summenzeile überschreitet ±1 Toleranz</span>`;
+      sanityEl.style.display = "";
+    } else {
+      sanityEl.innerHTML = "";
+      sanityEl.style.display = "none";
+    }
+
+    saveState();
+  }
+
+  function calcRecovery(m) {
+    if (!isFinite(m) || m < 0) return null;
+    const totalWeeks = Math.ceil(m * 4);
+    if (totalWeeks === 0) return { years: 0, months: 0, weeks: 0 };
+    const totalMonths = Math.floor(totalWeeks / 4);
+    const weeks = totalWeeks % 4;
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    return { years, months, weeks };
+  }
+
+  function formatRecoveryText(m) {
+    const r = calcRecovery(m);
+    if (!r) return "—";
+    const yStr = r.years + (r.years === 1 ? " Jahr" : " Jahre");
+    const mStr = r.months + (r.months === 1 ? " Monat" : " Monate");
+    const wStr = r.weeks + (r.weeks === 1 ? " Woche" : " Wochen");
+    return yStr + ", " + mStr + " und " + wStr;
+  }
+
+  $capital.addEventListener("input", function () { readCapital(); render(); });
+  $capital.addEventListener("blur", function () {
+    readCapital();
+    $capital.value = formatNumberPlain(state.capital, 0);
+    $capital.dataset.lastValid = $capital.value;
+    render();
+  });
+  $capital.addEventListener("focus", function () {
+    const stripped = String(state.capital);
+    $capital.value = stripped;
+    $capital.dataset.lastValid = stripped;
+    try { $capital.select(); } catch (e) {}
+  });
+
+  $currency.addEventListener("change", function () {
+    state.currency = $currency.value;
+    if (document.activeElement !== $capital) {
+      $capital.value = formatNumberPlain(state.capital, 0);
+      $capital.dataset.lastValid = $capital.value;
+    }
+    render();
+  });
+
+  $monthly.addEventListener("input", function () {
+    const v = parseNumberLoose($monthly.value);
+    state.monthlyPct = isNaN(v) ? 0 : v;
+    state.yearlyPct = monthlyToYearly(state.monthlyPct);
+    render();
+  });
+
+  $monthly.addEventListener("blur", function () {
+    $monthly.value = formatNumberPlain(state.monthlyPct, 2);
+    $monthly.dataset.lastValid = $monthly.value;
+  });
+  $monthly.addEventListener("focus", function () {
+    $monthly.value = formatNumberPlain(state.monthlyPct, 2).replace(/,/g, "");
+    $monthly.dataset.lastValid = $monthly.value;
+    try { $monthly.select(); } catch (e) {}
+  });
+
+  [$shareInvestor, $shareParty1, $shareParty2].forEach(inp => {
+    inp.addEventListener("input", function () { readShares(); render(); });
+    inp.addEventListener("blur", function () {
+      readShares();
+      let val;
+      if (inp === $shareInvestor) val = state.shares.investor;
+      else if (inp === $shareParty1) val = state.shares.party1;
+      else val = state.shares.party2;
+      inp.value = formatNumberPlain(val, 0);
+      inp.dataset.lastValid = inp.value;
+      render();
+    });
+    inp.addEventListener("focus", function () { try { inp.select(); } catch (e) {} });
+  });
+
+  function init() {
+    const fromUrl = readUrlParams();
+    const restored = !fromUrl && restoreState();
+
+    if (fromUrl || restored) {
+      // Push state to DOM — these win over HTML default values
+      $currency.value = state.currency;
+      $capital.value = formatNumberPlain(state.capital, 0);
+      $monthly.value = formatNumberPlain(state.monthlyPct, 2);
+      $shareInvestor.value = formatNumberPlain(state.shares.investor, 0);
+      $shareParty1.value = formatNumberPlain(state.shares.party1, 0);
+      $shareParty2.value = formatNumberPlain(state.shares.party2, 0);
+    } else {
+      readCapital();
+      readShares();
+      state.monthlyPct = parseNumberLoose($monthly.value);
+    }
+    state.yearlyPct = monthlyToYearly(state.monthlyPct);
+    $capital.value = formatNumberPlain(state.capital, 0);
+    $capital.dataset.lastValid = $capital.value;
+
+    // Persist URL-loaded values so subsequent reloads (without params) still show them
+    if (fromUrl) saveState();
+
+    render();
+  }
+  init();
+
+  // Expose reset for the footer link
+  window.__resetDashboard = function () {
+    if (confirm("Alle Werte auf Standardwerte zurücksetzen? Ihre gespeicherten Daten werden gelöscht.")) {
+      clearState();
+      // Strip any URL params so we land on real defaults
+      const cleanUrl = window.location.origin + window.location.pathname;
+      window.location.replace(cleanUrl);
+    }
+  };
+
+  // Expose share-link generator for the footer button
+  window.__shareDashboard = function () {
+    const url = buildShareUrl();
+    const btn = document.getElementById("shareBtn");
+    const flash = function (msg) {
+      if (!btn) return;
+      const original = btn.dataset.original || "Link teilen";
+      btn.dataset.original = original;
+      btn.textContent = msg;
+      btn.classList.add("copied");
+      setTimeout(function () {
+        btn.textContent = original;
+        btn.classList.remove("copied");
+      }, 2200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(function () {
+        flash("✓ Link kopiert");
+      }).catch(function () {
+        window.prompt("Diesen Link zum Teilen kopieren:", url);
+      });
+    } else {
+      window.prompt("Diesen Link zum Teilen kopieren:", url);
+    }
+  };
+})();
+</script>
+</body>
+</html>
